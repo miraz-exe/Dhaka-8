@@ -3,31 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Election Game - By Miraz</title>
+    <title>Election Game Pro - By Miraz</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="game-wrapper">
         <div id="ui">
-            <div class="candidate-left"><span class="name">মির্জা আব্বাস</span><br>ভোট: <span id="leftScore">0</span></div>
-            <div id="timer">60s</div>
-            <div class="candidate-right"><span class="name">নাসিরউদ্দিন</span><br>ভোট: <span id="rightScore">0</span></div>
+            <div class="candidate-box left">
+                <span class="name">মির্জা আব্বাস</span>
+                <div class="score-val" id="leftScore">0</div>
+            </div>
+            <div id="timer-wrapper">
+                <div id="timer">60s</div>
+            </div>
+            <div class="candidate-box right">
+                <span class="name">নাসিরউদ্দিন</span>
+                <div class="score-val" id="rightScore">0</div>
+            </div>
         </div>
 
         <div id="startScreen" class="overlay">
-            <img src="logo.png" alt="Logo" class="game-logo">
-            <button id="startBtn" class="main-btn">নির্বাচন শুরু করুন</button>
-            <div class="creator-section">
-                <p class="credits">Created By Miraz</p>
-                <a href="https://www.facebook.com/miraz.bot.2025" target="_blank" class="follow-btn">Follow for More</a>
+            <div class="glass-card">
+                <img src="logo.png" alt="Logo" class="game-logo">
+                <h2 class="game-title">নির্বাচন ২০২৬</h2>
+                <button id="startBtn" class="pro-btn">নির্বাচন শুরু করুন</button>
+                <div class="creator-section">
+                    <p class="credits">Developed by <span>Miraz</span></p>
+                    <a href="https://www.facebook.com/miraz.bot.2025" target="_blank" class="follow-link">Follow for Updates</a>
+                </div>
             </div>
         </div>
 
         <div id="gameOver" class="overlay hidden">
-            <h1 class="result-title">নির্বাচনী ফলাফল</h1>
-            <p id="winnerMessage"></p>
-            <div id="finalVotes"></div>
-            <button id="restartBtn" class="main-btn">পুনরায় নির্বাচন</button>
+            <div class="glass-card result-card">
+                <h1 class="result-title">নির্বাচনী ফলাফল</h1>
+                <div id="winner-crown">🏆</div>
+                <p id="winnerMessage"></p>
+                <div id="finalVotes"></div>
+                <button id="restartBtn" class="pro-btn restart">পুনরায় নির্বাচন</button>
+            </div>
         </div>
 
         <canvas id="gameCanvas"></canvas>
