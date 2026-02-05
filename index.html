@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pixel Bubble Dodge - By Miraz</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <div id="ui">
+            <div>Score: <span id="score">0</span></div>
+            <div style="font-size: 16px; color: #ffcc00;">Best: <span id="highScore">0</span></div>
+        </div>
+        <div id="startScreen" class="overlay">
+            <img src="logo.png" alt="Game Logo" class="game-logo">
+            <button id="startBtn">Start Game</button>
+            <div class="creator-section">
+                <p class="credits">Created By Miraz</p>
+                <a href="https://www.facebook.com/miraz.bot.2025" target="_blank" class="follow-btn">Follow for More</a>
+            </div>
+        </div>
+        <div id="gameOver" class="overlay hidden">
+            <h1>Game Over!</h1>
+            <p id="finalScore">Score: 0</p>
+            <p id="bestScoreDisplay" style="color: #00ff00; margin-top: 5px; margin-bottom: 20px;">Best: 0</p>
+            <button id="restartBtn">Try Again</button>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
