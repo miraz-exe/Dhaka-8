@@ -9,20 +9,14 @@
 <body>
     <div class="game-wrapper">
         <div id="ui">
-            <div class="candidate-left">
-                <span class="name">মির্জা আব্বাস</span><br>
-                ভোট: <span id="leftScore">0</span>
-            </div>
+            <div class="candidate-left"><span class="name">মির্জা আব্বাস</span><br>ভোট: <span id="leftScore">0</span></div>
             <div id="timer">60s</div>
-            <div class="candidate-right">
-                <span class="name">নাসিরউদ্দিন পাটোয়ারী</span><br>
-                ভোট: <span id="rightScore">0</span>
-            </div>
+            <div class="candidate-right"><span class="name">নাসিরউদ্দিন পাটোয়ারী</span><br>ভোট: <span id="rightScore">0</span></div>
         </div>
 
         <div id="startScreen" class="overlay">
             <img src="logo.png" alt="Logo" class="game-logo">
-            <button id="startBtn">নির্বাচন শুরু করুন</button>
+            <button id="startBtn" class="main-btn">নির্বাচন শুরু করুন</button>
             <div class="creator-section">
                 <p class="credits">Created By Miraz</p>
                 <a href="https://www.facebook.com/miraz.bot.2025" target="_blank" class="follow-btn">Follow for More</a>
@@ -30,10 +24,10 @@
         </div>
 
         <div id="gameOver" class="overlay hidden">
-            <h1>নির্বাচনী ফলাফল</h1>
-            <p id="winnerMessage" style="font-size: 22px; color: #00ff00; margin: 20px 0;"></p>
-            <div id="finalVotes" style="font-size: 18px; color: #fff; margin-bottom: 20px;"></div>
-            <button id="restartBtn">পুনরায় নির্বাচন</button>
+            <h1 class="result-title">নির্বাচনী ফলাফল</h1>
+            <p id="winnerMessage"></p>
+            <div id="finalVotes"></div>
+            <button id="restartBtn" class="main-btn">পুনরায় নির্বাচন</button>
         </div>
 
         <canvas id="gameCanvas"></canvas>
