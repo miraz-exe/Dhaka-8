@@ -16,6 +16,7 @@ let animationId = null, gameInterval = null;
 let bubbles = [], dhanItems = [];
 let isRaging = false;
 
+// Assets
 const bgImg = new Image(); bgImg.src = 'background.png';
 const playerImg = new Image(); playerImg.src = 'player_ball.png';
 const bubbleImg = new Image(); bubbleImg.src = 'bubble.png';
@@ -79,15 +80,19 @@ function startGame() {
     gameActive = false;
     if (animationId) cancelAnimationFrame(animationId);
     if (gameInterval) clearInterval(gameInterval);
+    
     bgMusic.currentTime = 0;
     bgMusic.play().catch(()=>{});
-    player.x = 200; player.y = 350; player.targetX = 200; player.targetY = 350;
+
     leftScore = 0; rightScore = 0; timeLeft = 60;
     leftScoreEl.innerText = "0"; rightScoreEl.innerText = "0"; timerEl.innerText = "60s";
+    
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('gameOver').classList.add('hidden');
+
     bubbles = Array.from({length: 20}, () => new FallingObject('bubble'));
     dhanItems = Array.from({length: 3}, () => new FallingObject('dhan'));
+
     gameActive = true;
     gameInterval = setInterval(() => {
         if (!gameActive) return;
@@ -109,10 +114,8 @@ function animate() {
     
     ctx.save();
     if (isRaging) {
-        // টকটকে লাল করার জন্য পারফেক্ট ফিল্টার
         ctx.filter = "sepia(1) saturate(10) hue-rotate(-50deg) brightness(0.8)";
-        ctx.shadowBlur = 30;
-        ctx.shadowColor = "red";
+        ctx.shadowBlur = 30; ctx.shadowColor = "red";
     }
     if (playerImg.complete) ctx.drawImage(playerImg, player.x - player.radius, player.y - player.radius, player.radius * 2, player.radius * 2);
     ctx.restore();
@@ -125,7 +128,7 @@ function animate() {
 function endGame() {
     gameActive = false; clearInterval(gameInterval); cancelAnimationFrame(animationId);
     gameOverSound.play().catch(()=>{});
-    let result = (leftScore > rightScore) ? "মির্জা আব্বাস বিপুল ভোটে জয়ী!" : (rightScore > leftScore) ? "নাসিরউদ্দিন পাটোয়ারী বিপুল ভোটে জয়ী!" : "ভোট ড্র হয়েছে!";
+    let result = (leftScore > rightScore) ? "মির্জা আব্বাস বিপুল ভোটে জয়ী!" : (rightScore > leftScore) ? "নাসিরউদ্দিন পাটোয়ারী বিপুল ভোটে জয়ী!" : "ভোট ড্র হয়েছে!";
     winnerMessage.innerText = result;
     finalVotes.innerHTML = `মির্জা আব্বাস: ${leftScore} ভোট<br>নাসিরউদ্দিন পাটোয়ারী: ${rightScore} ভোট`;
     document.getElementById('gameOver').classList.remove('hidden');
