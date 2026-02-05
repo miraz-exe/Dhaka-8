@@ -5,7 +5,6 @@ const rightScoreEl = document.getElementById('rightScore');
 const timerEl = document.getElementById('timer');
 const winnerMessage = document.getElementById('winnerMessage');
 const finalVotes = document.getElementById('finalVotes');
-const gameWrapper = document.querySelector('.game-wrapper');
 const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 
@@ -34,19 +33,22 @@ class FallingObject {
     reset() {
         this.radius = (this.type === 'bubble') ? 22 : 25;
         this.x = Math.random() * (canvas.width - 50) + 25;
-        this.y = -Math.random() * 800 - 100;
-        this.dx = (Math.random() - 0.5) * 3; 
-        this.dy = (this.type === 'bubble') ? Math.random() * 1.5 + 2.5 : Math.random() * 2 + 3;
+        this.y = -Math.random() * 500 - 100;
+        this.dx = (Math.random() - 0.5) * 4;
+        this.dy = (this.type === 'bubble') ? Math.random() * 2 + 3 : Math.random() * 2 + 3.5;
     }
     update() {
         this.x += this.dx; this.y += this.dy;
         if (this.x + this.radius > canvas.width || this.x - this.radius < 0) this.dx *= -1;
-        let dist = Math.hypot(player.x - this.x, player.y - this.y);
-        if (dist < player.radius + this.radius) {
+        
+        const dx = player.x - this.x;
+        const dy = player.y - this.y;
+        if (Math.sqrt(dx * dx + dy * dy) < player.radius + this.radius) {
             if (this.type === 'bubble') {
                 rightScore++; rightScoreEl.innerText = rightScore;
                 hitSound.currentTime = 0; hitSound.play().catch(()=>{});
-                isRaging = true; setTimeout(() => { isRaging = false; }, 200); 
+                isRaging = true;
+                setTimeout(() => { isRaging = false; }, 200); 
             } else {
                 leftScore++; leftScoreEl.innerText = leftScore;
                 collectSound.currentTime = 0; collectSound.play().catch(()=>{});
@@ -77,28 +79,19 @@ function startGame() {
     gameActive = false;
     if (animationId) cancelAnimationFrame(animationId);
     if (gameInterval) clearInterval(gameInterval);
-
-    // মিউজিক রিস্টার্ট করার মেইন ফিক্স এখানে
-    bgMusic.currentTime = 0; 
+    bgMusic.currentTime = 0;
     bgMusic.play().catch(()=>{});
-
     player.x = 200; player.y = 350; player.targetX = 200; player.targetY = 350;
     leftScore = 0; rightScore = 0; timeLeft = 60;
     leftScoreEl.innerText = "0"; rightScoreEl.innerText = "0"; timerEl.innerText = "60s";
-    gameWrapper.classList.remove('red-alert');
-    timerEl.style.color = "white";
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('gameOver').classList.add('hidden');
-
-    // বাবল ২০টি এবং ধান ৩টি
     bubbles = Array.from({length: 20}, () => new FallingObject('bubble'));
     dhanItems = Array.from({length: 3}, () => new FallingObject('dhan'));
-
     gameActive = true;
     gameInterval = setInterval(() => {
         if (!gameActive) return;
         timeLeft--; timerEl.innerText = timeLeft + "s";
-        if (timeLeft <= 5 && timeLeft > 0) { gameWrapper.classList.add('red-alert'); timerEl.style.color = "red"; }
         if (timeLeft <= 0) endGame();
     }, 1000);
     animate();
@@ -108,14 +101,22 @@ function animate() {
     if (!gameActive) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (bgImg.complete) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-    player.x += (player.targetX - player.x) * 0.15;
-    player.y += (player.targetY - player.y) * 0.15;
+
+    player.x += (player.targetX - player.x) * 0.2; 
+    player.y += (player.targetY - player.y) * 0.2;
     player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
     player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+    
     ctx.save();
-    if (isRaging) { ctx.shadowBlur = 25; ctx.shadowColor = "red"; ctx.filter = "sepia(1) saturate(10) hue-rotate(-50deg)"; }
+    if (isRaging) {
+        // টকটকে লাল করার জন্য পারফেক্ট ফিল্টার
+        ctx.filter = "sepia(1) saturate(10) hue-rotate(-50deg) brightness(0.8)";
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = "red";
+    }
     if (playerImg.complete) ctx.drawImage(playerImg, player.x - player.radius, player.y - player.radius, player.radius * 2, player.radius * 2);
     ctx.restore();
+
     bubbles.forEach(b => { b.update(); b.draw(); });
     dhanItems.forEach(d => { d.update(); d.draw(); });
     animationId = requestAnimationFrame(animate);
@@ -123,12 +124,12 @@ function animate() {
 
 function endGame() {
     gameActive = false; clearInterval(gameInterval); cancelAnimationFrame(animationId);
-    gameOverSound.play().catch(()=>{}); gameWrapper.classList.remove('red-alert');
+    gameOverSound.play().catch(()=>{});
     let result = (leftScore > rightScore) ? "মির্জা আব্বাস বিপুল ভোটে জয়ী!" : (rightScore > leftScore) ? "নাসিরউদ্দিন পাটোয়ারী বিপুল ভোটে জয়ী!" : "ভোট ড্র হয়েছে!";
     winnerMessage.innerText = result;
     finalVotes.innerHTML = `মির্জা আব্বাস: ${leftScore} ভোট<br>নাসিরউদ্দিন পাটোয়ারী: ${rightScore} ভোট`;
     document.getElementById('gameOver').classList.remove('hidden');
 }
 
-startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', startGame);
+startBtn.onclick = startGame;
+restartBtn.onclick = startGame;
