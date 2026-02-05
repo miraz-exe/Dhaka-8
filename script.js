@@ -34,9 +34,15 @@ class FallingObject {
     reset() {
         this.radius = (this.type === 'bubble') ? 22 : 25;
         this.x = Math.random() * (canvas.width - 50) + 25;
-        this.y = -Math.random() * 500 - 100;
-        this.dx = (Math.random() - 0.5) * 4;
-        this.dy = (this.type === 'bubble') ? Math.random() * 2 + 3 : Math.random() * 2 + 3.5;
+        this.y = -Math.random() * 800 - 100;
+        this.dx = (Math.random() - 0.5) * 2; 
+        
+        // Speed: Slower and consistent
+        if (this.type === 'bubble') {
+            this.dy = Math.random() * 1.5 + 2; 
+        } else {
+            this.dy = Math.random() * 2 + 2.5;
+        }
     }
     update() {
         this.x += this.dx; this.y += this.dy;
@@ -90,7 +96,8 @@ function startGame() {
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('gameOver').classList.add('hidden');
 
-    bubbles = Array.from({length: 20}, () => new FallingObject('bubble'));
+    // Density: Bubbles slightly increased to 15
+    bubbles = Array.from({length: 15}, () => new FallingObject('bubble'));
     dhanItems = Array.from({length: 3}, () => new FallingObject('dhan'));
 
     gameActive = true;
