@@ -38,8 +38,9 @@ class FallingObject {
         this.radius = (this.type === 'bubble') ? 22 : 25;
         this.x = Math.random() * (canvas.width - 50) + 25;
         this.y = -Math.random() * 600 - 50;
-        this.dx = (Math.random() - 0.5) * 7; 
-        this.dy = (this.type === 'bubble') ? Math.random() * 3 + 5 : Math.random() * 3 + 6;
+        // গতি কমানো হয়েছে: dx (পাশাপাশি) এবং dy (নিচে নামা)
+        this.dx = (Math.random() - 0.5) * 3; 
+        this.dy = (this.type === 'bubble') ? Math.random() * 1.5 + 2 : Math.random() * 1.5 + 2.5;
     }
     update() {
         this.x += this.dx;
@@ -99,7 +100,7 @@ function startGame() {
     leftScore = 0; rightScore = 0; timeLeft = 60;
     leftScoreEl.innerText = "0"; rightScoreEl.innerText = "0"; timerEl.innerText = "60s";
     
-    // বাবল বাড়িয়ে ১৫টি করা হয়েছে
+    // ঘনত্ব একই (১৫টি বাবল) রাখা হয়েছে
     bubbles = Array.from({length: 15}, () => new FallingObject('bubble'));
     dhanItems = [];
     nextDhanTime = Date.now() + 500;
@@ -136,7 +137,7 @@ function animate() {
     if (playerImg.complete) ctx.drawImage(playerImg, player.x - player.radius, player.y - player.radius, player.radius * 2, player.radius * 2);
     ctx.restore();
 
-    // ধানের শীষ প্রতি ০.৫ - ১ সেকেন্ডে আসবে
+    // ধানের শীষ আসার ফ্রিকোয়েন্সি (ঘনত্ব) একই রাখা হয়েছে
     if (Date.now() > nextDhanTime) {
         dhanItems.push(new FallingObject('dhan'));
         nextDhanTime = Date.now() + (Math.random() * 500 + 500); 
