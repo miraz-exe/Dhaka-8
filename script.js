@@ -5,6 +5,9 @@ const rightScoreEl = document.getElementById('rightScore');
 const timerEl = document.getElementById('timer');
 const winnerMessage = document.getElementById('winnerMessage');
 const finalVotes = document.getElementById('finalVotes');
+const gameWrapper = document.querySelector('.game-wrapper');
+const startBtn = document.getElementById('startBtn');
+const restartBtn = document.getElementById('restartBtn');
 
 canvas.width = 400;
 canvas.height = 700;
@@ -12,63 +15,45 @@ canvas.height = 700;
 let leftScore = 0, rightScore = 0, timeLeft = 60, gameActive = false;
 let animationId = null, gameInterval = null;
 let bubbles = [], dhanItems = [];
-let nextDhanTime = 0;
 let isRaging = false;
 
-// Assets
 const bgImg = new Image(); bgImg.src = 'background.png';
 const playerImg = new Image(); playerImg.src = 'player_ball.png';
 const bubbleImg = new Image(); bubbleImg.src = 'bubble.png';
 const dhanImg = new Image(); dhanImg.src = 'dhaner-shish.png';
 
-const bgMusic = new Audio('bg_music.mp3');
-bgMusic.loop = true; bgMusic.volume = 0.5;
+const bgMusic = new Audio('bg_music.mp3'); bgMusic.loop = true;
 const collectSound = new Audio('collect.mp3');
 const hitSound = new Audio('hit.mp3');
 const gameOverSound = new Audio('game_over.mp3');
 
-const player = { x: 200, y: 550, radius: 28, targetX: 200, targetY: 550 };
+const player = { x: 200, y: 350, radius: 50, targetX: 200, targetY: 350 };
 
 class FallingObject {
-    constructor(type) {
-        this.type = type;
-        this.reset();
-    }
+    constructor(type) { this.type = type; this.reset(); }
     reset() {
         this.radius = (this.type === 'bubble') ? 22 : 25;
         this.x = Math.random() * (canvas.width - 50) + 25;
-        this.y = -Math.random() * 600 - 50;
-        // স্লো স্পিড বজায় রাখা হয়েছে
+        this.y = -Math.random() * 800 - 100;
         this.dx = (Math.random() - 0.5) * 3; 
-        this.dy = (this.type === 'bubble') ? Math.random() * 1.5 + 2 : Math.random() * 1.5 + 2.5;
+        this.dy = (this.type === 'bubble') ? Math.random() * 1.5 + 2.5 : Math.random() * 2 + 3;
     }
     update() {
-        this.x += this.dx;
-        this.y += this.dy;
+        this.x += this.dx; this.y += this.dy;
         if (this.x + this.radius > canvas.width || this.x - this.radius < 0) this.dx *= -1;
-        
         let dist = Math.hypot(player.x - this.x, player.y - this.y);
         if (dist < player.radius + this.radius) {
             if (this.type === 'bubble') {
-                rightScore++;
-                rightScoreEl.innerText = rightScore;
-                hitSound.currentTime = 0;
-                hitSound.play().catch(()=>{});
-                isRaging = true;
-                setTimeout(() => { isRaging = false; }, 200); 
+                rightScore++; rightScoreEl.innerText = rightScore;
+                hitSound.currentTime = 0; hitSound.play().catch(()=>{});
+                isRaging = true; setTimeout(() => { isRaging = false; }, 200); 
             } else {
-                leftScore++;
-                leftScoreEl.innerText = leftScore;
-                collectSound.currentTime = 0;
-                collectSound.play().catch(()=>{});
+                leftScore++; leftScoreEl.innerText = leftScore;
+                collectSound.currentTime = 0; collectSound.play().catch(()=>{});
             }
             this.reset();
         }
-        if (this.y > canvas.height) {
-            if (this.type === 'bubble') this.reset();
-            else return true;
-        }
-        return false;
+        if (this.y - this.radius > canvas.height) this.reset();
     }
     draw() {
         const img = (this.type === 'bubble') ? bubbleImg : dhanImg;
@@ -77,46 +62,45 @@ class FallingObject {
 }
 
 function handleMove(e) {
-    if (e.cancelable) e.preventDefault();
+    if (!gameActive) return;
     const rect = canvas.getBoundingClientRect();
     const cx = e.touches ? e.touches[0].clientX : e.clientX;
     const cy = e.touches ? e.touches[0].clientY : e.clientY;
-    const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
-    player.targetX = (cx - rect.left) * sx;
-    player.targetY = (cy - rect.top) * sy;
+    player.targetX = (cx - rect.left) * (canvas.width / rect.width);
+    player.targetY = (cy - rect.top) * (canvas.height / rect.height);
 }
 
 canvas.addEventListener('mousemove', handleMove);
-canvas.addEventListener('touchmove', handleMove, { passive: false });
+canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); }, { passive: false });
 
 function startGame() {
     gameActive = false;
     if (animationId) cancelAnimationFrame(animationId);
     if (gameInterval) clearInterval(gameInterval);
 
-    bgMusic.currentTime = 0;
-    bgMusic.play().catch(() => {});
+    // মিউজিক রিস্টার্ট করার মেইন ফিক্স এখানে
+    bgMusic.currentTime = 0; 
+    bgMusic.play().catch(()=>{});
 
+    player.x = 200; player.y = 350; player.targetX = 200; player.targetY = 350;
     leftScore = 0; rightScore = 0; timeLeft = 60;
     leftScoreEl.innerText = "0"; rightScoreEl.innerText = "0"; timerEl.innerText = "60s";
-    
-    // বাবল ডেনসিটি ১৫-তেই রাখা হয়েছে
-    bubbles = Array.from({length: 15}, () => new FallingObject('bubble'));
-    dhanItems = [];
-    // প্রথম ধানের শীষ আসার সময় ১.৫ সেকেন্ড বাড়ানো হলো
-    nextDhanTime = Date.now() + 1500; 
-
+    gameWrapper.classList.remove('red-alert');
+    timerEl.style.color = "white";
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('gameOver').classList.add('hidden');
+
+    // বাবল ২০টি এবং ধান ৩টি
+    bubbles = Array.from({length: 20}, () => new FallingObject('bubble'));
+    dhanItems = Array.from({length: 3}, () => new FallingObject('dhan'));
 
     gameActive = true;
     gameInterval = setInterval(() => {
         if (!gameActive) return;
-        timeLeft--;
-        timerEl.innerText = timeLeft + "s";
+        timeLeft--; timerEl.innerText = timeLeft + "s";
+        if (timeLeft <= 5 && timeLeft > 0) { gameWrapper.classList.add('red-alert'); timerEl.style.color = "red"; }
         if (timeLeft <= 0) endGame();
     }, 1000);
-
     animate();
 }
 
@@ -124,51 +108,27 @@ function animate() {
     if (!gameActive) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (bgImg.complete) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-
     player.x += (player.targetX - player.x) * 0.15;
     player.y += (player.targetY - player.y) * 0.15;
     player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
     player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
-    
     ctx.save();
-    if (isRaging) {
-        ctx.shadowBlur = 20; ctx.shadowColor = "red";
-        ctx.filter = "sepia(1) saturate(10) hue-rotate(-50deg)";
-    }
+    if (isRaging) { ctx.shadowBlur = 25; ctx.shadowColor = "red"; ctx.filter = "sepia(1) saturate(10) hue-rotate(-50deg)"; }
     if (playerImg.complete) ctx.drawImage(playerImg, player.x - player.radius, player.y - player.radius, player.radius * 2, player.radius * 2);
     ctx.restore();
-
-    // ধানের শীষ আসার ডেনসিটি কমিয়ে সময় বাড়ানো হলো (১.৫ থেকে ৩ সেকেন্ড পর পর আসবে)
-    if (Date.now() > nextDhanTime) {
-        dhanItems.push(new FallingObject('dhan'));
-        nextDhanTime = Date.now() + (Math.random() * 1500 + 1500); 
-    }
-
     bubbles.forEach(b => { b.update(); b.draw(); });
-    dhanItems = dhanItems.filter(d => {
-        let isDead = d.update();
-        d.draw();
-        return !isDead;
-    });
-
+    dhanItems.forEach(d => { d.update(); d.draw(); });
     animationId = requestAnimationFrame(animate);
 }
 
 function endGame() {
-    gameActive = false;
-    clearInterval(gameInterval);
-    cancelAnimationFrame(animationId);
-    gameOverSound.currentTime = 0;
-    gameOverSound.play().catch(()=>{});
-    
-    let result = (leftScore > rightScore) ? "মির্জা আব্বাস বিপুল ভোটে জয়লাভ করেছেন!" : 
-                 (rightScore > leftScore) ? "নাসিরউদ্দিন পাটোয়ারী বিপুল ভোটে জয়লাভ করেছেন!" : "ভোট ড্র হয়েছে!";
+    gameActive = false; clearInterval(gameInterval); cancelAnimationFrame(animationId);
+    gameOverSound.play().catch(()=>{}); gameWrapper.classList.remove('red-alert');
+    let result = (leftScore > rightScore) ? "মির্জা আব্বাস বিপুল ভোটে জয়ী!" : (rightScore > leftScore) ? "নাসিরউদ্দিন পাটোয়ারী বিপুল ভোটে জয়ী!" : "ভোট ড্র হয়েছে!";
     winnerMessage.innerText = result;
-    finalVotes.innerHTML = `মির্জা আব্বাস: ${leftScore} ভোট | নাসিরউদ্দিন: ${rightScore} ভোট`;
+    finalVotes.innerHTML = `মির্জা আব্বাস: ${leftScore} ভোট<br>নাসিরউদ্দিন পাটোয়ারী: ${rightScore} ভোট`;
     document.getElementById('gameOver').classList.remove('hidden');
 }
 
-window.onload = () => {
-    document.getElementById('startBtn').addEventListener('click', startGame);
-    document.getElementById('restartBtn').addEventListener('click', startGame);
-};
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', startGame);
