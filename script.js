@@ -1,157 +1,172 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const scoreElement = document.getElementById('score');
-const highScoreElement = document.getElementById('highScore');
-const startScreen = document.getElementById('startScreen');
-const gameOverScreen = document.getElementById('gameOver');
-const startBtn = document.getElementById('startBtn');
-const restartBtn = document.getElementById('restartBtn');
+const leftScoreEl = document.getElementById('leftScore');
+const rightScoreEl = document.getElementById('rightScore');
+const timerEl = document.getElementById('timer');
+const winnerMessage = document.getElementById('winnerMessage');
+const finalVotes = document.getElementById('finalVotes');
 
 canvas.width = 400;
 canvas.height = 700;
 
-let score = 0;
-let highScore = localStorage.getItem('mirazHighScore') || 0;
-highScoreElement.innerText = highScore;
+let leftScore = 0, rightScore = 0, timeLeft = 60, gameActive = false;
+let animationId = null, gameInterval = null;
+let bubbles = [], dhanItems = [];
+let nextDhanTime = 0;
+let isRaging = false;
 
-let gameActive = false;
-let bubbles = [];
-let animationId;
-
+// Assets
 const bgImg = new Image(); bgImg.src = 'background.png';
 const playerImg = new Image(); playerImg.src = 'player_ball.png';
 const bubbleImg = new Image(); bubbleImg.src = 'bubble.png';
+const dhanImg = new Image(); dhanImg.src = 'dhaner-shish.png';
 
-const player = {
-    x: canvas.width / 2,
-    y: canvas.height - 150,
-    radius: 30, 
-    targetX: canvas.width / 2,
-    targetY: canvas.height - 150
-};
+const bgMusic = new Audio('bg_music.mp3');
+bgMusic.loop = true; bgMusic.volume = 0.5;
+const collectSound = new Audio('collect.mp3');
+const hitSound = new Audio('hit.mp3');
+const gameOverSound = new Audio('game_over.mp3');
 
-// ইমেজের রেশিও ঠিক রেখে ড্র করার ফাংশন
-function drawImageWithRatio(img, x, y, size) {
-    if (img.complete && img.naturalWidth !== 0) {
-        const ratio = img.naturalWidth / img.naturalHeight;
-        let drawW, drawH;
-        if (ratio > 1) {
-            drawW = size * 2;
-            drawH = (size * 2) / ratio;
-        } else {
-            drawH = size * 2;
-            drawW = (size * 2) * ratio;
-        }
-        ctx.drawImage(img, x - drawW / 2, y - drawH / 2, drawW, drawH);
-    } else {
-        // ইমেজ না থাকলে ব্যাকআপ শেপ
-        ctx.fillStyle = 'red';
-        ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill();
+const player = { x: 200, y: 550, radius: 28, targetX: 200, targetY: 550 };
+
+class FallingObject {
+    constructor(type) {
+        this.type = type;
+        this.reset();
     }
-}
-
-class Bubble {
-    constructor() { this.reset(); }
     reset() {
-        this.radius = Math.random() * 10 + 15; 
-        this.x = Math.random() * canvas.width;
-        this.y = -(Math.random() * 800 + 100);
-        this.dx = (Math.random() - 0.5) * 4;
-        this.dy = Math.random() * 2 + 3;
+        this.radius = (this.type === 'bubble') ? 22 : 25;
+        this.x = Math.random() * (canvas.width - 50) + 25;
+        this.y = -Math.random() * 600 - 50;
+        this.dx = (Math.random() - 0.5) * 7; 
+        this.dy = (this.type === 'bubble') ? Math.random() * 3 + 5 : Math.random() * 3 + 6;
     }
     update() {
         this.x += this.dx;
         this.y += this.dy;
         if (this.x + this.radius > canvas.width || this.x - this.radius < 0) this.dx *= -1;
-        if (this.y - this.radius > canvas.height) {
-            this.reset();
-            score++;
-            scoreElement.innerText = score;
-            if(score > highScore) {
-                highScore = score;
-                highScoreElement.innerText = highScore;
+        
+        let dist = Math.hypot(player.x - this.x, player.y - this.y);
+        if (dist < player.radius + this.radius) {
+            if (this.type === 'bubble') {
+                rightScore++;
+                rightScoreEl.innerText = rightScore;
+                hitSound.currentTime = 0;
+                hitSound.play().catch(()=>{});
+                isRaging = true;
+                setTimeout(() => { isRaging = false; }, 200); 
+            } else {
+                leftScore++;
+                leftScoreEl.innerText = leftScore;
+                collectSound.currentTime = 0;
+                collectSound.play().catch(()=>{});
             }
+            this.reset();
         }
+        if (this.y > canvas.height) {
+            if (this.type === 'bubble') this.reset();
+            else return true;
+        }
+        return false;
     }
     draw() {
-        drawImageWithRatio(bubbleImg, this.x, this.y, this.radius);
+        const img = (this.type === 'bubble') ? bubbleImg : dhanImg;
+        if (img.complete) ctx.drawImage(img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
     }
 }
 
-const handleMove = (e) => {
+function handleMove(e) {
+    if (e.cancelable) e.preventDefault();
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    let tx = (clientX - rect.left) * scaleX;
-    let ty = (clientY - rect.top) * scaleY;
-    player.targetX = Math.max(player.radius, Math.min(canvas.width - player.radius, tx));
-    player.targetY = Math.max(player.radius, Math.min(canvas.height - player.radius, ty));
-};
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
+    player.targetX = (cx - rect.left) * sx;
+    player.targetY = (cy - rect.top) * sy;
+}
 
-window.addEventListener('mousemove', handleMove);
-window.addEventListener('touchmove', handleMove);
+canvas.addEventListener('mousemove', handleMove);
+canvas.addEventListener('touchmove', handleMove, { passive: false });
 
 function startGame() {
-    gameActive = true;
-    score = 0;
-    scoreElement.innerText = score;
-    startScreen.classList.add('hidden');
-    gameOverScreen.classList.add('hidden');
-    bubbles = Array.from({ length: 8 }, () => new Bubble());
+    gameActive = false;
     if (animationId) cancelAnimationFrame(animationId);
+    if (gameInterval) clearInterval(gameInterval);
+
+    bgMusic.currentTime = 0;
+    bgMusic.play().catch(() => {});
+
+    leftScore = 0; rightScore = 0; timeLeft = 60;
+    leftScoreEl.innerText = "0"; rightScoreEl.innerText = "0"; timerEl.innerText = "60s";
+    
+    // বাবল বাড়িয়ে ১৫টি করা হয়েছে
+    bubbles = Array.from({length: 15}, () => new FallingObject('bubble'));
+    dhanItems = [];
+    nextDhanTime = Date.now() + 500;
+
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('gameOver').classList.add('hidden');
+
+    gameActive = true;
+    gameInterval = setInterval(() => {
+        if (!gameActive) return;
+        timeLeft--;
+        timerEl.innerText = timeLeft + "s";
+        if (timeLeft <= 0) endGame();
+    }, 1000);
+
     animate();
 }
 
 function animate() {
     if (!gameActive) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // ব্যাকগ্রাউন্ড রেশিও ঠিক রাখা
-    if (bgImg.complete && bgImg.naturalWidth !== 0) {
-        let imgRatio = bgImg.naturalWidth / bgImg.naturalHeight;
-        let canvasRatio = canvas.width / canvas.height;
-        let dW, dH, dX, dY;
-        if (imgRatio > canvasRatio) {
-            dW = canvas.height * imgRatio; dH = canvas.height;
-            dX = (canvas.width - dW) / 2; dY = 0;
-        } else {
-            dW = canvas.width; dH = canvas.width / imgRatio;
-            dX = 0; dY = (canvas.height - dH) / 2;
-        }
-        ctx.drawImage(bgImg, dX, dY, dW, dH);
-    }
+    if (bgImg.complete) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
 
     player.x += (player.targetX - player.x) * 0.15;
     player.y += (player.targetY - player.y) * 0.15;
     player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
     player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+    
+    ctx.save();
+    if (isRaging) {
+        ctx.shadowBlur = 20; ctx.shadowColor = "red";
+        ctx.filter = "sepia(1) saturate(10) hue-rotate(-50deg)";
+    }
+    if (playerImg.complete) ctx.drawImage(playerImg, player.x - player.radius, player.y - player.radius, player.radius * 2, player.radius * 2);
+    ctx.restore();
 
-    // প্লেয়ার রেশিও ঠিক রাখা
-    drawImageWithRatio(playerImg, player.x, player.y, player.radius);
+    // ধানের শীষ প্রতি ০.৫ - ১ সেকেন্ডে আসবে
+    if (Date.now() > nextDhanTime) {
+        dhanItems.push(new FallingObject('dhan'));
+        nextDhanTime = Date.now() + (Math.random() * 500 + 500); 
+    }
 
-    bubbles.forEach(bubble => {
-        bubble.update();
-        bubble.draw();
-        if (Math.hypot(player.x - bubble.x, player.y - bubble.y) < player.radius + bubble.radius) {
-            endGame();
-        }
+    bubbles.forEach(b => { b.update(); b.draw(); });
+    dhanItems = dhanItems.filter(d => {
+        let isDead = d.update();
+        d.draw();
+        return !isDead;
     });
+
     animationId = requestAnimationFrame(animate);
 }
 
 function endGame() {
     gameActive = false;
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('mirazHighScore', highScore);
-        highScoreElement.innerText = highScore;
-    }
-    document.getElementById('finalScore').innerText = "Score: " + score;
-    document.getElementById('bestScoreDisplay').innerText = "Best: " + highScore;
-    gameOverScreen.classList.remove('hidden');
+    clearInterval(gameInterval);
+    cancelAnimationFrame(animationId);
+    gameOverSound.currentTime = 0;
+    gameOverSound.play().catch(()=>{});
+    
+    let result = (leftScore > rightScore) ? "মির্জা আব্বাস বিপুল ভোটে জয়লাভ করেছেন!" : 
+                 (rightScore > leftScore) ? "নাসিরউদ্দিন পাটোয়ারী বিপুল ভোটে জয়লাভ করেছেন!" : "ভোট ড্র হয়েছে!";
+    winnerMessage.innerText = result;
+    finalVotes.innerHTML = `মির্জা আব্বাস: ${leftScore} ভোট | নাসিরউদ্দিন: ${rightScore} ভোট`;
+    document.getElementById('gameOver').classList.remove('hidden');
 }
 
-startBtn.onclick = startGame;
-restartBtn.onclick = startGame;
+window.onload = () => {
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('restartBtn').addEventListener('click', startGame);
+};
