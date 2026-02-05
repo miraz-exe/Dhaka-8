@@ -1,134 +1,19 @@
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const leftScoreEl = document.getElementById('leftScore');
-const rightScoreEl = document.getElementById('rightScore');
-const timerEl = document.getElementById('timer');
-const winnerMessage = document.getElementById('winnerMessage');
-const finalVotes = document.getElementById('finalVotes');
-const gameWrapper = document.querySelector('.game-wrapper');
-const startBtn = document.getElementById('startBtn');
-const restartBtn = document.getElementById('restartBtn');
-
-canvas.width = 400;
-canvas.height = 700;
-
-let leftScore = 0, rightScore = 0, timeLeft = 60, gameActive = false;
-let animationId = null, gameInterval = null;
-let bubbles = [], dhanItems = [];
-let isRaging = false;
-
-const bgImg = new Image(); bgImg.src = 'background.png';
-const playerImg = new Image(); playerImg.src = 'player_ball.png';
-const bubbleImg = new Image(); bubbleImg.src = 'bubble.png';
-const dhanImg = new Image(); dhanImg.src = 'dhaner-shish.png';
-
-const bgMusic = new Audio('bg_music.mp3'); bgMusic.loop = true;
-const collectSound = new Audio('collect.mp3');
-const hitSound = new Audio('hit.mp3');
-const gameOverSound = new Audio('game_over.mp3');
-
-const player = { x: 200, y: 350, radius: 50, targetX: 200, targetY: 350 };
-
-class FallingObject {
-    constructor(type) { this.type = type; this.reset(); }
-    reset() {
-        this.radius = (this.type === 'bubble') ? 22 : 25;
-        this.x = Math.random() * (canvas.width - 50) + 25;
-        this.y = -Math.random() * 800 - 100;
-        this.dx = (Math.random() - 0.5) * 3; 
-        this.dy = (this.type === 'bubble') ? Math.random() * 1.5 + 2.5 : Math.random() * 2 + 3;
-    }
-    update() {
-        this.x += this.dx; this.y += this.dy;
-        if (this.x + this.radius > canvas.width || this.x - this.radius < 0) this.dx *= -1;
-        let dist = Math.hypot(player.x - this.x, player.y - this.y);
-        if (dist < player.radius + this.radius) {
-            if (this.type === 'bubble') {
-                rightScore++; rightScoreEl.innerText = rightScore;
-                hitSound.currentTime = 0; hitSound.play().catch(()=>{});
-                isRaging = true; setTimeout(() => { isRaging = false; }, 200); 
-            } else {
-                leftScore++; leftScoreEl.innerText = leftScore;
-                collectSound.currentTime = 0; collectSound.play().catch(()=>{});
-            }
-            this.reset();
-        }
-        if (this.y - this.radius > canvas.height) this.reset();
-    }
-    draw() {
-        const img = (this.type === 'bubble') ? bubbleImg : dhanImg;
-        if (img.complete) ctx.drawImage(img, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
-    }
-}
-
-function handleMove(e) {
-    if (!gameActive) return;
-    const rect = canvas.getBoundingClientRect();
-    const cx = e.touches ? e.touches[0].clientX : e.clientX;
-    const cy = e.touches ? e.touches[0].clientY : e.clientY;
-    player.targetX = (cx - rect.left) * (canvas.width / rect.width);
-    player.targetY = (cy - rect.top) * (canvas.height / rect.height);
-}
-
-canvas.addEventListener('mousemove', handleMove);
-canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); }, { passive: false });
-
-function startGame() {
-    gameActive = false;
-    if (animationId) cancelAnimationFrame(animationId);
-    if (gameInterval) clearInterval(gameInterval);
-
-    // মিউজিক রিস্টার্ট করার মেইন ফিক্স এখানে
-    bgMusic.currentTime = 0; 
-    bgMusic.play().catch(()=>{});
-
-    player.x = 200; player.y = 350; player.targetX = 200; player.targetY = 350;
-    leftScore = 0; rightScore = 0; timeLeft = 60;
-    leftScoreEl.innerText = "0"; rightScoreEl.innerText = "0"; timerEl.innerText = "60s";
-    gameWrapper.classList.remove('red-alert');
-    timerEl.style.color = "white";
-    document.getElementById('startScreen').classList.add('hidden');
-    document.getElementById('gameOver').classList.add('hidden');
-
-    // বাবল ২০টি এবং ধান ৩টি
-    bubbles = Array.from({length: 20}, () => new FallingObject('bubble'));
-    dhanItems = Array.from({length: 3}, () => new FallingObject('dhan'));
-
-    gameActive = true;
-    gameInterval = setInterval(() => {
-        if (!gameActive) return;
-        timeLeft--; timerEl.innerText = timeLeft + "s";
-        if (timeLeft <= 5 && timeLeft > 0) { gameWrapper.classList.add('red-alert'); timerEl.style.color = "red"; }
-        if (timeLeft <= 0) endGame();
-    }, 1000);
-    animate();
-}
-
-function animate() {
-    if (!gameActive) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (bgImg.complete) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-    player.x += (player.targetX - player.x) * 0.15;
-    player.y += (player.targetY - player.y) * 0.15;
-    player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-    player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
-    ctx.save();
-    if (isRaging) { ctx.shadowBlur = 25; ctx.shadowColor = "red"; ctx.filter = "sepia(1) saturate(10) hue-rotate(-50deg)"; }
-    if (playerImg.complete) ctx.drawImage(playerImg, player.x - player.radius, player.y - player.radius, player.radius * 2, player.radius * 2);
-    ctx.restore();
-    bubbles.forEach(b => { b.update(); b.draw(); });
-    dhanItems.forEach(d => { d.update(); d.draw(); });
-    animationId = requestAnimationFrame(animate);
-}
-
-function endGame() {
-    gameActive = false; clearInterval(gameInterval); cancelAnimationFrame(animationId);
-    gameOverSound.play().catch(()=>{}); gameWrapper.classList.remove('red-alert');
-    let result = (leftScore > rightScore) ? "মির্জা আব্বাস বিপুল ভোটে জয়ী!" : (rightScore > leftScore) ? "নাসিরউদ্দিন পাটোয়ারী বিপুল ভোটে জয়ী!" : "ভোট ড্র হয়েছে!";
-    winnerMessage.innerText = result;
-    finalVotes.innerHTML = `মির্জা আব্বাস: ${leftScore} ভোট<br>নাসিরউদ্দিন পাটোয়ারী: ${rightScore} ভোট`;
-    document.getElementById('gameOver').classList.remove('hidden');
-}
-
-startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', startGame);
+* { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; user-select: none; }
+body { background-color: #0a0a0a; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; color: white; font-family: 'Arial', sans-serif; }
+.game-wrapper { position: relative; width: 95vw; max-width: 400px; aspect-ratio: 400 / 700; border: 4px solid #333; background-color: #000; overflow: hidden; }
+canvas { width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+#ui { position: absolute; top: 0; left: 0; width: 100%; height: 80px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 10; background: rgba(0, 0, 0, 0.7); pointer-events: none; }
+#timer { font-size: 20px; color: #fff; font-weight: bold; background: #222; padding: 5px 12px; border-radius: 8px; border: 2px solid #00ff00; }
+.overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999; text-align: center; padding: 20px; pointer-events: auto; }
+.main-btn { padding: 15px 30px; font-size: 20px; font-weight: bold; cursor: pointer; background: #fff; border: none; box-shadow: 4px 4px 0px #00ff00; margin-bottom: 10px; color: #000; position: relative; z-index: 1000; }
+.main-btn:active { transform: scale(0.95); box-shadow: 2px 2px 0px #00ff00; }
+.result-title { font-size: 28px; color: #ffcc00; margin-bottom: 15px; }
+#winnerMessage { font-size: 20px; color: #00ff00; margin: 15px 0; font-weight: bold; }
+#finalVotes { font-size: 16px; color: #ddd; margin-bottom: 25px; line-height: 1.6; }
+.red-alert { animation: alert-glow 0.5s infinite alternate; box-shadow: inset 0 0 50px rgba(255, 0, 0, 0.8) !important; border: 6px solid red !important; }
+@keyframes alert-glow { from { background-color: rgba(255, 0, 0, 0); } to { background-color: rgba(255, 0, 0, 0.2); } }
+.hidden { display: none !important; }
+.candidate-left { color: #44ff44; font-size: 12px; }
+.candidate-right { color: #ff4444; font-size: 12px; text-align: right; }
+.game-logo { width: 130px; margin-bottom: 20px; }
+.follow-btn { background: #007bff; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-size: 13px; margin-top: 10px; display: inline-block; }
